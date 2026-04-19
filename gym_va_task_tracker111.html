@@ -1,0 +1,364 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); }
+.tracker { padding: 0.75rem 0; }
+.header-bar { background: #1E1B4B; border-radius: var(--border-radius-lg); padding: 14px 20px; margin-bottom: 10px; }
+.header-title { font-size: 16px; font-weight: 500; color: #fff; margin-bottom: 2px; }
+.header-sub { font-size: 12px; color: #A5B4FC; }
+.stats-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
+.stat { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 12px; }
+.stat-label { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 3px; }
+.stat-num { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
+.controls { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: center; }
+.controls select, .controls input { font-size: 12px; height: 32px; padding: 0 10px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: var(--color-background-primary); color: var(--color-text-primary); }
+.controls input { flex: 1; min-width: 140px; }
+.btn-add { height: 32px; padding: 0 14px; border-radius: var(--border-radius-md); border: 0.5px solid #4F46BA; background: #4F46BA; color: #fff; font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+.btn-add:hover { background: #3C3489; }
+.btn-clear { height: 32px; padding: 0 14px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: transparent; color: var(--color-text-secondary); font-size: 12px; cursor: pointer; }
+.table-wrap { overflow-x: auto; border-radius: var(--border-radius-lg); border: 0.5px solid var(--color-border-tertiary); }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 12px; }
+col.c-date { width: 88px; }
+col.c-task { width: 220px; }
+col.c-cat { width: 76px; }
+col.c-pri { width: 72px; }
+col.c-sta { width: 130px; }
+col.c-notes { width: 160px; }
+col.c-del { width: 36px; }
+thead th { background: #1E1B4B; color: #fff; padding: 9px 10px; text-align: left; font-weight: 500; font-size: 11px; cursor: pointer; user-select: none; white-space: nowrap; }
+thead th:hover { background: #2D2A6E; }
+thead th .sort-arrow { margin-left: 4px; opacity: 0.5; font-size: 10px; }
+thead th.sorted .sort-arrow { opacity: 1; }
+tbody tr { border-bottom: 0.5px solid var(--color-border-tertiary); }
+tbody tr:last-child { border-bottom: none; }
+tbody td { padding: 7px 10px; vertical-align: middle; color: var(--color-text-primary); }
+tbody td input[type=text], tbody td select { width: 100%; font-size: 11px; border: none; background: transparent; color: var(--color-text-primary); outline: none; font-family: var(--font-sans); }
+tbody td select { cursor: pointer; }
+tbody td.notes-cell input { font-size: 11px; }
+.del-btn { background: none; border: none; cursor: pointer; color: var(--color-text-tertiary); font-size: 14px; padding: 2px 4px; border-radius: 4px; }
+.del-btn:hover { color: #E24B4A; background: #FCEBEB; }
+.tag { display: inline-block; font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 99px; }
+.tag-daily { background: #EEEDFE; color: #3C3489; }
+.tag-weekly { background: #E1F5EE; color: #085041; }
+.tag-monthly { background: #FAEEDA; color: #633806; }
+.pri-high { color: #A32D2D; font-weight: 500; }
+.pri-med { color: #854F0B; font-weight: 500; }
+.pri-low { color: #3B6D11; font-weight: 500; }
+tr.s-completed { background: #EAF3DE !important; }
+tr.s-completed td { color: #27500A; }
+tr.s-inprogress { background: #FAEEDA !important; }
+tr.s-inprogress td { color: #633806; }
+tr.s-notstarted { background: #FCEBEB !important; }
+tr.s-notstarted td { color: #791F1F; }
+tr.s-waiting { background: #E6F1FB !important; }
+tr.s-waiting td { color: #0C447C; }
+tr.s-completed td input, tr.s-completed td select { color: #27500A; }
+tr.s-inprogress td input, tr.s-inprogress td select { color: #633806; }
+tr.s-notstarted td input, tr.s-notstarted td select { color: #791F1F; }
+tr.s-waiting td input, tr.s-waiting td select { color: #0C447C; }
+.legend { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--color-text-secondary); }
+.leg-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.add-form { background: var(--color-background-secondary); border-radius: var(--border-radius-lg); padding: 12px 14px; margin-bottom: 10px; display: none; }
+.add-form.open { display: block; }
+.add-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.add-row-wide { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.form-group label { display: block; font-size: 11px; color: var(--color-text-secondary); margin-bottom: 3px; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; font-size: 12px; padding: 6px 10px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: var(--color-background-primary); color: var(--color-text-primary); font-family: var(--font-sans); }
+.form-group textarea { resize: none; height: 54px; }
+.form-btns { display: flex; gap: 8px; }
+.btn-save { height: 32px; padding: 0 16px; border-radius: var(--border-radius-md); background: #4F46BA; color: #fff; border: none; font-size: 12px; font-weight: 500; cursor: pointer; }
+.btn-cancel { height: 32px; padding: 0 14px; border-radius: var(--border-radius-md); background: transparent; color: var(--color-text-secondary); border: 0.5px solid var(--color-border-secondary); font-size: 12px; cursor: pointer; }
+.empty-row td { text-align: center; padding: 24px; color: var(--color-text-tertiary); font-size: 12px; }
+</style>
+
+<div class="tracker">
+  <h2 class="sr-only">Australian Gym VA Task Tracker — dynamic, sortable, colour-coded task management tool</h2>
+
+  <div class="header-bar">
+    <div class="header-title" id="main-title">Task Tracker — Loading...</div>
+    <div class="header-sub">Australian Gym VA · Geramel Tapis · Super Sidekick</div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat"><div class="stat-label">Total tasks</div><div class="stat-num" id="stat-total">0</div></div>
+    <div class="stat"><div class="stat-label">Completed</div><div class="stat-num" id="stat-done" style="color:#3B6D11">0</div></div>
+    <div class="stat"><div class="stat-label">In progress</div><div class="stat-num" id="stat-prog" style="color:#854F0B">0</div></div>
+    <div class="stat"><div class="stat-label">Not started</div><div class="stat-num" id="stat-todo" style="color:#A32D2D">0</div></div>
+  </div>
+
+  <div class="legend">
+    <div class="leg-item"><div class="leg-dot" style="background:#EAF3DE;border:1px solid #97C459"></div>Completed</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#FAEEDA;border:1px solid #EF9F27"></div>In progress</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#FCEBEB;border:1px solid #F09595"></div>Not started</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#E6F1FB;border:1px solid #85B7EB"></div>Waiting for client</div>
+  </div>
+
+  <div class="controls">
+    <input type="text" id="search" placeholder="Search tasks..." oninput="render()">
+    <select id="filter-cat" onchange="render()">
+      <option value="">All categories</option>
+      <option value="Daily">Daily</option>
+      <option value="Weekly">Weekly</option>
+      <option value="Monthly">Monthly</option>
+    </select>
+    <select id="filter-pri" onchange="render()">
+      <option value="">All priorities</option>
+      <option value="High">High</option>
+      <option value="Medium">Medium</option>
+      <option value="Low">Low</option>
+    </select>
+    <select id="filter-sta" onchange="render()">
+      <option value="">All statuses</option>
+      <option value="Not Started">Not started</option>
+      <option value="In Progress">In progress</option>
+      <option value="Completed">Completed</option>
+      <option value="Waiting for Client">Waiting for client</option>
+    </select>
+    <button class="btn-clear" onclick="clearFilters()">Clear</button>
+    <button class="btn-add" onclick="toggleAddForm()">+ Add task</button>
+  </div>
+
+  <div class="add-form" id="add-form">
+    <div class="add-row">
+      <div class="form-group"><label>Task description</label><input type="text" id="f-task" placeholder="What needs to be done?"></div>
+      <div class="form-group"><label>Category</label>
+        <select id="f-cat"><option>Daily</option><option>Weekly</option><option>Monthly</option></select>
+      </div>
+      <div class="form-group"><label>Priority</label>
+        <select id="f-pri"><option>High</option><option>Medium</option><option>Low</option></select>
+      </div>
+    </div>
+    <div class="add-row-wide">
+      <div class="form-group"><label>Status</label>
+        <select id="f-sta"><option>Not Started</option><option>In Progress</option><option>Completed</option><option>Waiting for Client</option></select>
+      </div>
+      <div class="form-group"><label>Notes / Next steps</label><textarea id="f-notes" placeholder="Add context, blockers or next actions..."></textarea></div>
+    </div>
+    <div class="form-btns">
+      <button class="btn-save" onclick="addTask()">Save task</button>
+      <button class="btn-cancel" onclick="toggleAddForm()">Cancel</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <colgroup>
+        <col class="c-date"><col class="c-task"><col class="c-cat">
+        <col class="c-pri"><col class="c-sta"><col class="c-notes"><col class="c-del">
+      </colgroup>
+      <thead>
+        <tr>
+          <th onclick="sortBy('date')">Date <span class="sort-arrow" id="arr-date">↕</span></th>
+          <th onclick="sortBy('task')">Task description <span class="sort-arrow" id="arr-task">↕</span></th>
+          <th onclick="sortBy('cat')">Category <span class="sort-arrow" id="arr-cat">↕</span></th>
+          <th onclick="sortBy('pri')">Priority <span class="sort-arrow" id="arr-pri">↕</span></th>
+          <th onclick="sortBy('sta')">Status <span class="sort-arrow" id="arr-sta">↕</span></th>
+          <th>Notes / Next steps</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const today = new Date();
+const todayStr = today.toLocaleDateString('en-AU', { day:'2-digit', month:'short', year:'numeric' });
+document.getElementById('main-title').textContent = `Task Tracker — ${todayStr}`;
+
+const TASKS = [
+  { id:1, date:todayStr, task:'Check member inbox — respond to all enquiries within 2 hours', cat:'Daily', pri:'High', sta:'Not Started', notes:'Check email, Facebook DMs, booking system messages' },
+  { id:2, date:todayStr, task:'Review Red Flag & Orange Flag report', cat:'Daily', pri:'High', sta:'Not Started', notes:'Flag members at risk — notify owner of urgent cases' },
+  { id:3, date:todayStr, task:'Follow up on failed direct debit payments', cat:'Daily', pri:'High', sta:'Not Started', notes:'Contact members with failed DD — offer payment resolution' },
+  { id:4, date:todayStr, task:'Lead follow-up — new enquiries from Meta Ads', cat:'Daily', pri:'High', sta:'Not Started', notes:'Use Sell-by-Chat framework — book trial within 24hrs' },
+  { id:5, date:todayStr, task:'Update CRM — log all lead interactions and status changes', cat:'Daily', pri:'High', sta:'Not Started', notes:'Ensure pipeline is clean and up to date' },
+  { id:6, date:todayStr, task:'Check attendance list and flag MIA members', cat:'Daily', pri:'Medium', sta:'Not Started', notes:'Members absent 7+ days — add to outreach list' },
+  { id:7, date:todayStr, task:'Review and respond to Google & Facebook reviews', cat:'Daily', pri:'Medium', sta:'Not Started', notes:'Respond within 24 hours — positive and negative' },
+  { id:8, date:todayStr, task:'Schedule and publish daily social media post', cat:'Daily', pri:'Medium', sta:'Not Started', notes:'Use approved content calendar — check caption & hashtags' },
+  { id:9, date:todayStr, task:'Daily Meta Ads review — check spend, leads, cost per lead', cat:'Daily', pri:'Medium', sta:'Not Started', notes:'Flag if CPL is above target — note in ad tracker' },
+  { id:10, date:todayStr, task:'Send end-of-day summary to gym owner', cat:'Daily', pri:'Low', sta:'Not Started', notes:'Bullet-point update — leads, issues, actions taken' },
+  { id:11, date:todayStr, task:'Send Weekly Newsletter to all members', cat:'Weekly', pri:'High', sta:'Not Started', notes:'Use Mailchimp — include class updates, promos, member spotlight' },
+  { id:12, date:todayStr, task:'Weekly attendance analysis — identify trends', cat:'Weekly', pri:'High', sta:'Not Started', notes:'Compare week vs prior week — flag drops to owner' },
+  { id:13, date:todayStr, task:'Fringe Outreach — contact at-risk members', cat:'Weekly', pri:'High', sta:'Not Started', notes:'Call or message members flagged in Red Flag report' },
+  { id:14, date:todayStr, task:'Lead pipeline review — update all lead statuses in CRM', cat:'Weekly', pri:'High', sta:'Not Started', notes:'Archive dead leads — push warm leads to next stage' },
+  { id:15, date:todayStr, task:'Weekly sales report — leads, trials booked, conversions', cat:'Weekly', pri:'High', sta:'Not Started', notes:'Send summary to owner by Friday 5PM AEST' },
+  { id:16, date:todayStr, task:'Content calendar planning for next week', cat:'Weekly', pri:'Medium', sta:'Not Started', notes:'Plan 5–7 posts — align with promos or events' },
+  { id:17, date:todayStr, task:'Review and optimise Meta Ads — weekly performance', cat:'Weekly', pri:'Medium', sta:'Not Started', notes:'Check CPL, ROAS, reach — adjust budget if needed' },
+  { id:18, date:todayStr, task:'Follow up on trial members — check conversion status', cat:'Weekly', pri:'Medium', sta:'Not Started', notes:'Send follow-up to trial members not yet converted' },
+  { id:19, date:todayStr, task:'Social media engagement review', cat:'Weekly', pri:'Medium', sta:'Not Started', notes:'Clear all unanswered DMs — reply to all comments' },
+  { id:20, date:todayStr, task:'Prepare weekly owner update summary', cat:'Weekly', pri:'Low', sta:'Not Started', notes:'Key metrics: leads, attendance, revenue, issues, wins' },
+  { id:21, date:todayStr, task:'Monthly P&L summary — review with owner', cat:'Monthly', pri:'High', sta:'Not Started', notes:'Pull from Xero — highlight revenue, expenses, net profit/loss' },
+  { id:22, date:todayStr, task:'BAS preparation support — reconcile GST for the quarter', cat:'Monthly', pri:'High', sta:'Not Started', notes:'Ensure all transactions coded correctly — send to accountant' },
+  { id:23, date:todayStr, task:'Payroll review — confirm all pays processed correctly', cat:'Monthly', pri:'High', sta:'Not Started', notes:'Check wages, PAYG withholding, super in Xero' },
+  { id:24, date:todayStr, task:'Monthly member retention report', cat:'Monthly', pri:'High', sta:'Not Started', notes:'Track cancellations, freezes, new joins — calculate churn' },
+  { id:25, date:todayStr, task:'Monthly marketing performance report', cat:'Monthly', pri:'High', sta:'Not Started', notes:'Meta Ads: spend, leads, CPL, conversions — month vs month' },
+  { id:26, date:todayStr, task:'Reconcile all bank accounts in Xero', cat:'Monthly', pri:'High', sta:'Not Started', notes:'Trading, Online Saver, Credit Card — all must balance' },
+  { id:27, date:todayStr, task:'Aged receivables review — follow up overdue invoices', cat:'Monthly', pri:'Medium', sta:'Not Started', notes:'Flag 30+ day overdue accounts — notify owner' },
+  { id:28, date:todayStr, task:'Content audit — review last month\'s social performance', cat:'Monthly', pri:'Medium', sta:'Not Started', notes:'Top posts, engagement rate, follower growth' },
+  { id:29, date:todayStr, task:'Depreciation run in Xero — post monthly journal', cat:'Monthly', pri:'Low', sta:'Not Started', notes:'Run fixed asset depreciation — confirm in General Ledger' },
+  { id:30, date:todayStr, task:'Check upcoming public holidays (state-specific)', cat:'Monthly', pri:'Low', sta:'Not Started', notes:'Adjust comms schedule and follow-up calendar accordingly' },
+];
+
+let data = TASKS.map(t => ({...t}));
+let nextId = 31;
+let sortCol = 'cat';
+let sortDir = 1;
+const PRI_ORDER = { High:0, Medium:1, Low:2 };
+const STA_ORDER = { 'Not Started':0, 'In Progress':1, 'Completed':2, 'Waiting for Client':3 };
+
+function statusClass(sta) {
+  if (sta==='Completed') return 's-completed';
+  if (sta==='In Progress') return 's-inprogress';
+  if (sta==='Not Started') return 's-notstarted';
+  if (sta==='Waiting for Client') return 's-waiting';
+  return '';
+}
+
+function priClass(p) {
+  if (p==='High') return 'pri-high';
+  if (p==='Medium') return 'pri-med';
+  return 'pri-low';
+}
+
+function catTag(c) {
+  const cls = c==='Daily'?'tag-daily':c==='Weekly'?'tag-weekly':'';
+  return `<span class="tag ${cls}">${c}</span>`;
+}
+
+function render() {
+  const search = document.getElementById('search').value.toLowerCase();
+  const fcat = document.getElementById('filter-cat').value;
+  const fpri = document.getElementById('filter-pri').value;
+  const fsta = document.getElementById('filter-sta').value;
+
+  let rows = data.filter(t => {
+    if (fcat && t.cat !== fcat) return false;
+    if (fpri && t.pri !== fpri) return false;
+    if (fsta && t.sta !== fsta) return false;
+    if (search && !t.task.toLowerCase().includes(search) && !t.notes.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  rows.sort((a,b) => {
+    let av, bv;
+    if (sortCol==='pri') { av=PRI_ORDER[a.pri]??9; bv=PRI_ORDER[b.pri]??9; }
+    else if (sortCol==='sta') { av=STA_ORDER[a.sta]??9; bv=STA_ORDER[b.sta]??9; }
+    else { av=(a[sortCol]||'').toString().toLowerCase(); bv=(b[sortCol]||'').toString().toLowerCase(); }
+    if (av<bv) return -1*sortDir;
+    if (av>bv) return 1*sortDir;
+    return 0;
+  });
+
+  const tbody = document.getElementById('tbody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No tasks match your filters.</td></tr>';
+  } else {
+    tbody.innerHTML = rows.map(t => `
+      <tr class="${statusClass(t.sta)}" id="row-${t.id}">
+        <td><input type="text" value="${t.date}" onchange="update(${t.id},'date',this.value)"></td>
+        <td><input type="text" value="${escHtml(t.task)}" onchange="update(${t.id},'task',this.value)"></td>
+        <td>
+          <select onchange="update(${t.id},'cat',this.value)">
+            ${['Daily','Weekly','Monthly'].map(o=>`<option${t.cat===o?' selected':''}>${o}</option>`).join('')}
+          </select>
+        </td>
+        <td class="${priClass(t.pri)}">
+          <select onchange="update(${t.id},'pri',this.value)">
+            ${['High','Medium','Low'].map(o=>`<option${t.pri===o?' selected':''}>${o}</option>`).join('')}
+          </select>
+        </td>
+        <td>
+          <select onchange="update(${t.id},'sta',this.value)">
+            ${['Not Started','In Progress','Completed','Waiting for Client'].map(o=>`<option${t.sta===o?' selected':''}>${o}</option>`).join('')}
+          </select>
+        </td>
+        <td class="notes-cell"><input type="text" value="${escHtml(t.notes)}" onchange="update(${t.id},'notes',this.value)"></td>
+        <td><button class="del-btn" onclick="deleteTask(${t.id})" title="Delete">×</button></td>
+      </tr>
+    `).join('');
+  }
+
+  const done = data.filter(t=>t.sta==='Completed').length;
+  const prog = data.filter(t=>t.sta==='In Progress').length;
+  const todo = data.filter(t=>t.sta==='Not Started').length;
+  document.getElementById('stat-total').textContent = data.length;
+  document.getElementById('stat-done').textContent = done;
+  document.getElementById('stat-prog').textContent = prog;
+  document.getElementById('stat-todo').textContent = todo;
+}
+
+function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+function update(id, field, val) {
+  const t = data.find(t=>t.id===id);
+  if (!t) return;
+  t[field] = val;
+  const row = document.getElementById('row-'+id);
+  if (row) {
+    row.className = statusClass(t.sta);
+    const priTd = row.cells[3];
+    priTd.className = priClass(t.pri);
+  }
+  updateStats();
+}
+
+function updateStats() {
+  const done = data.filter(t=>t.sta==='Completed').length;
+  const prog = data.filter(t=>t.sta==='In Progress').length;
+  const todo = data.filter(t=>t.sta==='Not Started').length;
+  document.getElementById('stat-total').textContent = data.length;
+  document.getElementById('stat-done').textContent = done;
+  document.getElementById('stat-prog').textContent = prog;
+  document.getElementById('stat-todo').textContent = todo;
+}
+
+function deleteTask(id) {
+  data = data.filter(t=>t.id!==id);
+  render();
+}
+
+function sortBy(col) {
+  if (sortCol===col) sortDir*=-1; else { sortCol=col; sortDir=1; }
+  document.querySelectorAll('.sort-arrow').forEach(el => { el.textContent='↕'; el.parentElement.classList.remove('sorted'); });
+  const arr = document.getElementById('arr-'+col);
+  if (arr) { arr.textContent = sortDir===1?'↑':'↓'; arr.parentElement.classList.add('sorted'); }
+  render();
+}
+
+function clearFilters() {
+  document.getElementById('search').value='';
+  document.getElementById('filter-cat').value='';
+  document.getElementById('filter-pri').value='';
+  document.getElementById('filter-sta').value='';
+  render();
+}
+
+function toggleAddForm() {
+  const f = document.getElementById('add-form');
+  f.classList.toggle('open');
+  if (f.classList.contains('open')) document.getElementById('f-task').focus();
+}
+
+function addTask() {
+  const task = document.getElementById('f-task').value.trim();
+  if (!task) { document.getElementById('f-task').focus(); return; }
+  data.push({
+    id: nextId++,
+    date: todayStr,
+    task,
+    cat: document.getElementById('f-cat').value,
+    pri: document.getElementById('f-pri').value,
+    sta: document.getElementById('f-sta').value,
+    notes: document.getElementById('f-notes').value.trim()
+  });
+  document.getElementById('f-task').value='';
+  document.getElementById('f-notes').value='';
+  document.getElementById('f-sta').value='Not Started';
+  document.getElementById('add-form').classList.remove('open');
+  render();
+}
+
+render();
+</script>
